@@ -142,32 +142,8 @@ All other program libraries will be installed automatically by the installation 
 - Autobot (RPA component) - based on TagUI and various addon python packages
 - Prefect (workflow orchestration) - full fledged orchestration package for dataflow automation.
 
-### RELEASE NOTES:
-
-20220710 - Optimus 1.1.
-        Stable release.
-        Package and installation scripts.
-        Separate autobot and prefect installation folders.
-        Separate scripts folder.
-
-20221006 - Stable release. New features: Installation scripts and package updates. Scripts (user files) folders separated from Autobot program folder.
-
-20221018 - Updated installation scripts. Added [python-minifier](https://pypi.org/project/python-minifier/) [github](https://dflook.github.io/python-minifier/installation.html).
-
 ### CONTACT
 Raymond Oh - for reporting of bugs, questions, requests etc
-
-## CLONING REPO, CONTRIBUTION AND LICENSE
-
-### Clone git repository
-
-```sh
-    $ git clone "https://github.com/ray-oh/Optimus"
-```
-
-You can run and edit the content or contribute to them using [Gitpod.io](https://www.gitpod.io/), a free online development environment, with a single click.
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](http://gitpod.io/#https://github.com/ray-oh/tutorialGitHub)
 
 ### Contributing New Content
 	
@@ -182,9 +158,3 @@ If you're adding new **files** they need to be saved in the `/data` folder. The 
 ### Contributing
 
 Before removing any bug, or adding new contributions please do the following: **[Check Contribution Guidelines Before Contribution](Contributing.md)** and also please read **[CODE OF CONDUCT](CODE_OF_CONDUCT.md)**.
-
-### License
-
-Licensed under the [BSD 3-Clause License](LICENSE) 
-
-
