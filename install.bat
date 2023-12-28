@@ -1,8 +1,9 @@
 @echo off
 @echo ================ OPTIMUS INSTALLATION ============================
 @echo Install optimus automation suite
-@echo - Check python version - 3.10
-@echo - Download latest package, unpack and update files
+@echo - Download latest packages, unpack and update files:
+@echo   - Optimus Pacakge. Upgrade over existing installation if requested.
+@echo   - Python. Minimalist package with tkinter and version 3.10.9.
 @echo - Install external programs - prefect, jupyter, playwright, robot framework browser
 @echo - Install Pip libraries used by Optimus autobot
 @echo ==================================================================
