@@ -6,6 +6,7 @@
 
 rem call:header INSTALL OPTIMUS
 
+echo The current directory is %~dp0
 rem CHECK ARGUMENTS for requested package
 setlocal enabledelayedexpansion
 
@@ -36,6 +37,9 @@ setlocal enabledelayedexpansion
 		set package=optimus_package.zip
 	)
 	echo package= !package!
+
+pause
+EXIT /B %ERRORLEVEL%
 
 rem help requested with -h
 IF /I "%1" == "-h" (
