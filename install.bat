@@ -6,9 +6,13 @@
 
 rem call:header INSTALL OPTIMUS
 
-echo The current directory is %~dp0
 rem CHECK ARGUMENTS for requested package
 setlocal enabledelayedexpansion
+	echo The current directory is %cd% and full path %~dp0
+	if /I "!cd!" neq "!cd:autobot=!" (
+		cd ..
+		echo Directory !cd!
+	)
 
 	rem capture all arguments into argumentString
 	set arguments=%* 
@@ -23,14 +27,14 @@ setlocal enabledelayedexpansion
 
 		rem To capture the last argument
 		for %%a in (%*) do set lastArg=%%a
-		echo The last argument is %lastArg%.
+		echo The last argument is !lastArg!.
 
 		rem check if arguments contains optimus_package
-		if /I "%lastArg%" neq "%lastArg:optimus_package=%" (
-			rem True - contains the string
+		if /I "!lastArg!" neq "!lastArg:optimus_package=!" (
+			echo True - contains the string
 			set package=!lastArg!
 		) else (
-			rem False
+			echo False
 			set package=optimus_package.zip
 		)
 	) else (
@@ -38,8 +42,8 @@ setlocal enabledelayedexpansion
 	)
 	echo package= !package!
 
-pause
-EXIT /B %ERRORLEVEL%
+rem pause
+rem EXIT /B %ERRORLEVEL%
 
 rem help requested with -h
 IF /I "%1" == "-h" (
@@ -88,6 +92,8 @@ call:installPython_winpython
 .\autobot\venv\Scripts\pip --version
 .\autobot\venv\Scripts\pip --version >> install.log
 
+rem create newReq variable as input for refresh of libraries
+call:stringExistInFile [NEW] newReq install.log
 call:START_INSTALL_AUTOBOT_LIB
 call:INSTALL_PREFECT
 call:INSTALL_JUPYTER
@@ -124,7 +130,9 @@ EXIT /B %ERRORLEVEL%
 	if "%silentMode%" == "True" (
 		echo Silent install libraries
 		echo INSTALL AUTOBOT libraries >> install.log
-		.\autobot\venv\Scripts\pip install -r .\autobot\requirements.txt >> install.log
+		if "%newReq%" == "True" (
+			.\autobot\venv\Scripts\pip install -r .\autobot\requirements.txt >> install.log
+		)
 	) else (
 		SET /P AREYOUSURE=Install Optimus libraries - Are you sure (Y/[N])
 		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_OPT_LIB
@@ -143,8 +151,10 @@ EXIT /B %ERRORLEVEL%
 	if "%silentMode%" == "True" (
 		echo INSTALL PREFECT
 		echo INSTALL PREFECT >> install.log
-		.\autobot\venv\Scripts\pip install -U prefect >> install.log
-		.\autobot\venv\Scripts\prefect version >> install.log
+		if "%newReq%" == "True" (		
+			.\autobot\venv\Scripts\pip install -U prefect >> install.log
+			.\autobot\venv\Scripts\prefect version >> install.log
+		)
 	) else (
 		SET /P AREYOUSURE=Install Prefect - Are you sure (Y/[N])
 		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_PREFECT
@@ -160,11 +170,13 @@ EXIT /B %ERRORLEVEL%
 	if "%silentMode%" == "True" (
 		echo INSTALL JUPYTER
 		echo INSTALL JUPYTER >> install.log
-		pip install jupyter >> install.log
-		.\autobot\venv\Scripts\pip install ipykernel >> install.log
-		for %%I in (.) do set CurrDirName=%%~nxI
-		rem echo %CurrDirName%
-		.\autobot\venv\Scripts\python -m ipykernel install --user --name=%CurrDirName% >> install.log
+		if "%newReq%" == "True" (		
+			pip install jupyter >> install.log
+			.\autobot\venv\Scripts\pip install ipykernel >> install.log
+			for %%I in (.) do set CurrDirName=%%~nxI
+			rem echo %CurrDirName%
+			.\autobot\venv\Scripts\python -m ipykernel install --user --name=%CurrDirName% >> install.log
+		)
 	) else (
 		SET /P AREYOUSURE=Install Jupyter Notebook - Are you sure (Y/[N])
 		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_JUPYTER
@@ -182,26 +194,28 @@ EXIT /B %ERRORLEVEL%
 	@echo ================ INSTALL PLAYWRIGHT =================
 	@echo ================ INSTALL PLAYWRIGHT ================= >> install.log
 	if "%silentMode%" == "True" (
-		.\autobot\venv\Scripts\playwright install >> install.log
-		@echo ================ INSTALL ROBOTFRAMEWORK BROWSER =================
-		@echo ================ INSTALL ROBOTFRAMEWORK BROWSER ================= >> install.log
+		if "%newReq%" == "True" (		
+			.\autobot\venv\Scripts\playwright install >> install.log
+			@echo ================ INSTALL ROBOTFRAMEWORK BROWSER =================
+			@echo ================ INSTALL ROBOTFRAMEWORK BROWSER ================= >> install.log
 
-		rem Need to install NPM to complete the browser initizliation - https://kinsta.com/blog/how-to-install-node-js/
-		rem .\installation\node-v18.18.0-x64.msi
-		set npmExist=
-		call:programExist npm npmExist
-		if "%npmExist%" neq "True" (
-			rem set NODEJS_VERS=v20.9.0
-			mkdir tmp
-			call:installNPM v20.9.0
-			rmdir tmp /S /Q
+			rem Need to install NPM to complete the browser initizliation - https://kinsta.com/blog/how-to-install-node-js/
+			rem .\installation\node-v18.18.0-x64.msi
+			set npmExist=
+			call:programExist npm npmExist
+			if "%npmExist%" neq "True" (
+				rem set NODEJS_VERS=v20.9.0
+				mkdir tmp
+				call:installNPM v20.9.0
+				rmdir tmp /S /Q
+			)
+
+			rem https://stackoverflow.com/questions/39764302/npm-throws-error-unable-to-get-issuer-cert-locally-while-installing-any-package
+			npm set strict-ssl=false
+			@echo Initialize robot framework browser
+			@echo Initialize robot framework browser >> install.log		
+			.\autobot\venv\Scripts\rfbrowser init --skip-browsers >> install.log
 		)
-
-		rem https://stackoverflow.com/questions/39764302/npm-throws-error-unable-to-get-issuer-cert-locally-while-installing-any-package
-		npm set strict-ssl=false
-		@echo Initialize robot framework browser
-		@echo Initialize robot framework browser >> install.log		
-		.\autobot\venv\Scripts\rfbrowser init --skip-browsers >> install.log
 	) else (
 		SET /P AREYOUSURE=Install Playwright - Are you sure (Y/[N])
 		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_PLAYWRIGHT
@@ -261,6 +275,7 @@ EXIT /B %ERRORLEVEL%
 	Powershell.exe Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
 
 	if not exist %1 (
+		echo %1 not present in %cd%
 		rem tmp\optimus_package.zip
 		@echo Download optimus package
 		rem set OPTIMUS_URL=https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/optimus_package.zip
@@ -269,6 +284,8 @@ EXIT /B %ERRORLEVEL%
 		powershell wget https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/%1 -o ./%1
 		rem ./tmp/optimus_package.zip
 		echo Download optimus package >> install.log
+	) else (
+		echo %1 present in %cd%
 	)
 
 	if not exist tmp\autobot (
@@ -289,7 +306,7 @@ EXIT /B %ERRORLEVEL%
 		rem set destSync=.
 		rem robocopy .\tmp "%destSync%" /XD __pycache__ Lib venv /XF install.bat optimus_package.zip python_installation.zip /e /copy:DAT /mt /z
 		robocopy .\tmp . /XD __pycache__ Lib venv /XF install.bat optimus_package.zip /e /copy:DAT /mt /z >> install.log
-		echo NEW INSTALL >> install.log
+		echo [NEW] INSTALL >> install.log
 	) else (
 		rem @echo UPGRADE - Update optimus codes
 		rem robocopy .\tmp\autobot\src .\autobot\src /XD __pycache__ Lib venv /XF install.bat /e /copy:DAT /mt /z
@@ -297,7 +314,7 @@ EXIT /B %ERRORLEVEL%
 		@echo Check if there is new requirements.txt
 		fc /b %~dp0autobot\requirements.txt %~dp0tmp\autobot\requirements.txt > nul
 		if errorlevel 1 (
-			echo NEW requirements file >> install.log
+			echo [NEW] requirements file >> install.log
 		) else (
 			echo Requirements file unchanged
 		)
