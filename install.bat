@@ -8,7 +8,9 @@ rem call:header INSTALL OPTIMUS
 
 rem CHECK ARGUMENTS for requested package
 setlocal enabledelayedexpansion
-	echo The current directory is %cd% and full path %~dp0
+	echo The current directory is %cd%
+	rem and full path of batch script %~dp0
+	rem if path contains autobot, change to upper level
 	if /I "!cd!" neq "!cd:autobot=!" (
 		cd ..
 		echo Directory !cd!
@@ -16,34 +18,29 @@ setlocal enabledelayedexpansion
 
 	rem capture all arguments into argumentString
 	set arguments=%* 
-	echo Arguments provided: %arguments%
-
 	rem Count arguments
 	set argCount=0
 	for %%x in (%*) do Set /A argCount+=1
-	echo The number of arguments passed is %argCount%.
+	echo %argCount% number of arguments passed.  Arguments are: %arguments%
 
 	if %argCount% neq 0 (
 
 		rem To capture the last argument
 		for %%a in (%*) do set lastArg=%%a
-		echo The last argument is !lastArg!.
+		rem echo The last argument is !lastArg!.
 
-		rem check if arguments contains optimus_package
+		rem check if arguments contains optimus_package.  Else default package is optimus_package.zip
 		if /I "!lastArg!" neq "!lastArg:optimus_package=!" (
-			echo True - contains the string
+			rem echo True - contains the string
 			set package=!lastArg!
 		) else (
-			echo False
+			rem echo False
 			set package=optimus_package.zip
 		)
 	) else (
 		set package=optimus_package.zip
 	)
 	echo package= !package!
-
-rem pause
-rem EXIT /B %ERRORLEVEL%
 
 rem help requested with -h
 IF /I "%1" == "-h" (
@@ -278,10 +275,17 @@ EXIT /B %ERRORLEVEL%
 		echo %1 not present in %cd%
 		rem tmp\optimus_package.zip
 		@echo Download optimus package
+
+		rem Check latest release
+		set psCommand=powershell -command "Invoke-RestMethod -Uri https://api.github.com/repos/ray-oh/optimus-installation/releases/latest | Select-Object -ExpandProperty tag_name"
+		for /f "usebackq delims=" %%i in (`!psCommand!`) do set latestRelease=%%i
+		@echo Latest Release !latestRelease! of package %1 is available.
+
 		rem set OPTIMUS_URL=https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/optimus_package.zip
 		rem powershell wget "%OPTIMUS_URL%" -o ./tmp/optimus_package.zip
 		rem powershell wget https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/optimus_package.zip -o ./optimus_package.zip
-		powershell wget https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/%1 -o ./%1
+		rem powershell wget https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/%1 -o ./%1
+		powershell wget https://github.com/ray-oh/Optimus-Installation/releases/download/!latestRelease!/%1 -o ./%1
 		rem ./tmp/optimus_package.zip
 		echo Download optimus package >> install.log
 	) else (
@@ -299,6 +303,8 @@ EXIT /B %ERRORLEVEL%
 		Powershell.exe Expand-Archive %1 -DestinationPath tmp
 		rem tmp\optimus_package.zip
 		echo Upack optimus package >> install.log
+	) else (
+		echo tmp\autobot already exist, hence no unpack performed.  Remove this directory if you wish to unpack the package files for installation.
 	)
 
 	if not exist autobot\src (

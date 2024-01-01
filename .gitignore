@@ -158,3 +158,36 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# Autobot Program exclusions
+/autobot/src/general_automation/temp
+/autobot/venv
+/autobot/*ERROR.jpg
+/memory/*
+/prefect/venv
+optimus_package*.zip
+/autobot/settings*.bak
+/temp
+/archive
+/deployment
+/scripts/[a-zA-Z.]*
+/scripts/_cache/*
+#/installation/packages/*
+#/installation/python*
+#/installation/3rd_party_tools/*
+# ignore evertyhing above except the following
+#/scripts  Do not exclude the sub dir if working with ! negation
+!/scripts/OptimusLibPublic.xlsm
+!/scripts/whatsapp.xlsm
+!/scripts/test-sample.xlsm
+!/scripts/mito.ipynb
+!/scripts/tagui.ipynb
+!/scripts/functions.ipynb
+!/scripts/runJupyterNotebook.bat
+!/scripts/_cache/OptimusLibPublic.pickle
+# /scripts/*/output
+# /scripts/*test*
+# /scripts/*main*
+# /scripts/sample_notebook/*
+*DClickReport*.ipynb
+.vscode
