@@ -107,11 +107,14 @@ call:INSTALL_MITO
 
 call:header Operation Finished Successfully
 rem clean up installation files
-if exist disable_tmp (
+if exist tmp (
 	rmdir tmp /S /Q
 )
-if exist disable_optimus_package.zip (
+if exist optimus_package.zip (
 	del optimus_package.zip
+)
+if exist optimus_package_upgrade.zip (
+	del optimus_package_upgrade.zip
 )
 if exist python_installation.zip (
 	del python_installation.zip
@@ -287,7 +290,7 @@ EXIT /B %ERRORLEVEL%
 		rem powershell wget https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/%1 -o ./%1
 		powershell wget https://github.com/ray-oh/Optimus-Installation/releases/download/!latestRelease!/%1 -o ./%1
 		rem ./tmp/optimus_package.zip
-		echo Download optimus package >> install.log
+		echo Download optimus package !latestRelease!/%1 >> install.log
 	) else (
 		echo %1 present in %cd%
 	)
