@@ -15,3 +15,5 @@ The installation script will automatically download and install required package
 - Optimus software libraries and sample scripts
   - optimus_package.zip (latest release)
 
+## Check version of installation
+![image](https://github.com/ray-oh/Optimus-Installation/assets/115925194/391658a1-1cee-4906-83ae-57693ecd307d)
