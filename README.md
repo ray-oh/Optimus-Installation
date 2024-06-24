@@ -16,4 +16,6 @@ The installation script will automatically download and install required package
   - optimus_package.zip (latest release)
 
 ## Check version of installation
-![image](https://github.com/ray-oh/Optimus-Installation/assets/115925194/391658a1-1cee-4906-83ae-57693ecd307d)
+![image](https://github.com/ray-oh/Optimus-Installation/assets/115925194/391658a1-1cee-4906-83ae-57693ecd307d)  
+Info is maintained in follow file in the source code:  
+![image](https://github.com/ray-oh/Optimus-Installation/assets/115925194/131a5cee-91f8-4660-aecf-b1acc6b581ee)
