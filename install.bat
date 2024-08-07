@@ -4,84 +4,48 @@
 @echo ==================================================================
 @ECHO OFF     
 
-rem call:header INSTALL OPTIMUS
-
-rem CHECK ARGUMENTS for requested package
+REM call:header INSTALL OPTIMUS
 setlocal enabledelayedexpansion
-	echo The current directory is %cd%
-	rem and full path of batch script %~dp0
-	rem if path contains autobot, change to upper level
-	if /I "!cd!" neq "!cd:autobot=!" (
-		cd ..
-		echo Directory !cd!
-	)
 
-	rem capture all arguments into argumentString
-	set arguments=%* 
-	rem Count arguments
-	set argCount=0
-	for %%x in (%*) do Set /A argCount+=1
-	echo %argCount% number of arguments passed.  Arguments are: %arguments%
-
-	if %argCount% neq 0 (
-
-		rem To capture the last argument
-		for %%a in (%*) do set lastArg=%%a
-		rem echo The last argument is !lastArg!.
-
-		rem check if arguments contains optimus_package.  Else default package is optimus_package.zip
-		if /I "!lastArg!" neq "!lastArg:optimus_package=!" (
-			rem echo True - contains the string
-			set package=!lastArg!
-		) else (
-			rem echo False
-			set package=optimus_package.zip
-		)
-	) else (
-		set package=optimus_package.zip
-	)
-	echo package= !package!
-
-rem help requested with -h
-IF /I "%1" == "-h" (
-	@echo Install optimus automation suite
-	@echo [HOW TO USE]
-	@echo - Install.bat should be placed in the directory you wish to install OPTIMUS.
-	@echo   - Example: D:\Optimus
-	@echo If installing over existing program, an upgrade will be performed installed
-	@echo   - autobot program files will be updated.  And libraries will be reinstalled if NEW requirements detected
-	@echo .
-	@echo [WHAT HAPPENS]
-	@echo - Latest packages will be downloaded, unpacked and updated in the directory:
-	@echo   - Optimus Pacakge.
-	@echo     - Default is optimus_package.zip.
-	@echo     - If another release is required, then e.g. install -s optimus_package_20231228_mini.zip
-	@echo       The specific package must be the last argument
-	@echo   - Python. Minimalist package with tkinter and version 3.10.9.
-	@echo   - If optimus package or python package files are present, download will be skipped.
-	@echo - Installs external programs - prefect, jupyter, playwright, robot framework browser
-	@echo - Installs Pip libraries used by Optimus autobot
-	@echo .
-	@echo ------------------------------------------------------------------
-	@echo -h or -H for help
-	@echo -s or -S for silent mode full installation e.g. install -s
-	@echo          Generates install.log for details of installation run
-	@echo ------------------------------------------------------------------
-	pause
-	EXIT /B %ERRORLEVEL%
-)
-
+REM DECLARE some default parameters for script
+echo The current directory is %~dp0
+set package=optimus_package.zip
+rem initialize install log
 type nul > install.log
 
-rem silent mode full installation
-IF /I "%1" == "-s" (
+REM PARSE Arguments
+:parse
+IF "%~1"=="" GOTO endparse
+IF /I "%~1"=="-h" (
+	call :help
+	EXIT /B %ERRORLEVEL%
+)
+IF /I "%~1"=="-p" (
+	REM If another package defined - replace the default package
+	IF not "%~2"=="" (
+		echo Package specified: %2
+		set package=%2
+	) else (
+		echo Please specify a package if using -p flag
+		EXIT /B %ERRORLEVEL%
+	)
+)
+IF /I "%~1"=="-s" (
+	REM silent mode full installation.  /I for case insensitive comparison
 	echo [SILENT] mode >> install.log
 )
+SHIFT
+GOTO parse
+:endparse
+
+REM !package! for delayed expansion instead of %package% which is expanded before block is executed
 rem create silentMode variable as input for silent mode or prompt for confirmation
 call:stringExistInFile [SILENT] silentMode install.log
-rem echo %silentMode%
+echo Parameters: package: !package!, Silent Mode: !silentMode!
 
-call:installOptimusPackage %package%
+REM MAIN SCRIPT
+call:installOptimusPackage !package!
+
 rem optimus_package.zip
 call:installPython_winpython
 .\autobot\venv\Scripts\python --version
@@ -89,8 +53,6 @@ call:installPython_winpython
 .\autobot\venv\Scripts\pip --version
 .\autobot\venv\Scripts\pip --version >> install.log
 
-rem create newReq variable as input for refresh of libraries
-call:stringExistInFile [NEW] newReq install.log
 call:START_INSTALL_AUTOBOT_LIB
 call:INSTALL_PREFECT
 call:INSTALL_JUPYTER
@@ -107,14 +69,11 @@ call:INSTALL_MITO
 
 call:header Operation Finished Successfully
 rem clean up installation files
-if exist tmp (
+if exist disable_tmp (
 	rmdir tmp /S /Q
 )
-if exist optimus_package.zip (
+if exist disable_optimus_package.zip (
 	del optimus_package.zip
-)
-if exist optimus_package_upgrade.zip (
-	del optimus_package_upgrade.zip
 )
 if exist python_installation.zip (
 	del python_installation.zip
@@ -130,11 +89,9 @@ EXIT /B %ERRORLEVEL%
 	if "%silentMode%" == "True" (
 		echo Silent install libraries
 		echo INSTALL AUTOBOT libraries >> install.log
-		if "%newReq%" == "True" (
-			.\autobot\venv\Scripts\pip install -r .\autobot\requirements.txt >> install.log
-		)
+		.\autobot\venv\Scripts\pip install -r .\autobot\requirements.txt >> install.log
 	) else (
-		SET /P AREYOUSURE=Install Optimus libraries - Are you sure (Y/[N])
+		SET /P AREYOUSURE=Install Optimus libraries - Are you sure Y/[N]
 		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_OPT_LIB
 		.\autobot\venv\Scripts\pip install -r .\autobot\requirements.txt
 		PAUSE
@@ -151,12 +108,10 @@ EXIT /B %ERRORLEVEL%
 	if "%silentMode%" == "True" (
 		echo INSTALL PREFECT
 		echo INSTALL PREFECT >> install.log
-		if "%newReq%" == "True" (		
-			.\autobot\venv\Scripts\pip install -U prefect >> install.log
-			.\autobot\venv\Scripts\prefect version >> install.log
-		)
+		.\autobot\venv\Scripts\pip install -U prefect >> install.log
+		.\autobot\venv\Scripts\prefect version >> install.log
 	) else (
-		SET /P AREYOUSURE=Install Prefect - Are you sure (Y/[N])
+		SET /P AREYOUSURE=Install Prefect - Are you sure Y/[N]
 		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_PREFECT
 		.\autobot\venv\Scripts\pip install -U prefect
 		.\autobot\venv\Scripts\prefect version
@@ -170,15 +125,13 @@ EXIT /B %ERRORLEVEL%
 	if "%silentMode%" == "True" (
 		echo INSTALL JUPYTER
 		echo INSTALL JUPYTER >> install.log
-		if "%newReq%" == "True" (		
-			pip install jupyter >> install.log
-			.\autobot\venv\Scripts\pip install ipykernel >> install.log
-			for %%I in (.) do set CurrDirName=%%~nxI
-			rem echo %CurrDirName%
-			.\autobot\venv\Scripts\python -m ipykernel install --user --name=%CurrDirName% >> install.log
-		)
+		pip install jupyter >> install.log
+		.\autobot\venv\Scripts\pip install ipykernel >> install.log
+		for %%I in (.) do set CurrDirName=%%~nxI
+		rem echo %CurrDirName%
+		.\autobot\venv\Scripts\python -m ipykernel install --user --name=%CurrDirName% >> install.log
 	) else (
-		SET /P AREYOUSURE=Install Jupyter Notebook - Are you sure (Y/[N])
+		SET /P AREYOUSURE=Install Jupyter Notebook - Are you sure Y/[N]
 		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_JUPYTER
 		pip install jupyter
 		.\autobot\venv\Scripts\pip install ipykernel
@@ -194,30 +147,28 @@ EXIT /B %ERRORLEVEL%
 	@echo ================ INSTALL PLAYWRIGHT =================
 	@echo ================ INSTALL PLAYWRIGHT ================= >> install.log
 	if "%silentMode%" == "True" (
-		if "%newReq%" == "True" (		
-			.\autobot\venv\Scripts\playwright install >> install.log
-			@echo ================ INSTALL ROBOTFRAMEWORK BROWSER =================
-			@echo ================ INSTALL ROBOTFRAMEWORK BROWSER ================= >> install.log
+		.\autobot\venv\Scripts\playwright install >> install.log
+		@echo ================ INSTALL ROBOTFRAMEWORK BROWSER =================
+		@echo ================ INSTALL ROBOTFRAMEWORK BROWSER ================= >> install.log
 
-			rem Need to install NPM to complete the browser initizliation - https://kinsta.com/blog/how-to-install-node-js/
-			rem .\installation\node-v18.18.0-x64.msi
-			set npmExist=
-			call:programExist npm npmExist
-			if "%npmExist%" neq "True" (
-				rem set NODEJS_VERS=v20.9.0
-				mkdir tmp
-				call:installNPM v20.9.0
-				rmdir tmp /S /Q
-			)
-
-			rem https://stackoverflow.com/questions/39764302/npm-throws-error-unable-to-get-issuer-cert-locally-while-installing-any-package
-			npm set strict-ssl=false
-			@echo Initialize robot framework browser
-			@echo Initialize robot framework browser >> install.log		
-			.\autobot\venv\Scripts\rfbrowser init --skip-browsers >> install.log
+		rem Need to install NPM to complete the browser initizliation - https://kinsta.com/blog/how-to-install-node-js/
+		rem .\installation\node-v18.18.0-x64.msi
+		set npmExist=
+		call:programExist npm npmExist
+		if "%npmExist%" neq "True" (
+			rem set NODEJS_VERS=v20.9.0
+			mkdir tmp
+			call:installNPM v20.9.0
+			rmdir tmp /S /Q
 		)
+
+		rem https://stackoverflow.com/questions/39764302/npm-throws-error-unable-to-get-issuer-cert-locally-while-installing-any-package
+		npm set strict-ssl=false
+		@echo Initialize robot framework browser
+		@echo Initialize robot framework browser >> install.log		
+		.\autobot\venv\Scripts\rfbrowser init --skip-browsers >> install.log
 	) else (
-		SET /P AREYOUSURE=Install Playwright - Are you sure (Y/[N])
+		SET /P AREYOUSURE=Install Playwright - Are you sure Y/[N]
 		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_PLAYWRIGHT
 
 		.\autobot\venv\Scripts\playwright install
@@ -250,7 +201,7 @@ EXIT /B %ERRORLEVEL%
 		@echo This is skipped for silent install.  Do manual install if required.
 		@echo This is skipped for silent install.  Do manual install if required. >> install.log
 	) else (
-		SET /P AREYOUSURE=Install Mito sheets for use in Jupyter Notebook - Are you sure (Y/[N])
+		SET /P AREYOUSURE=Install Mito sheets for use in Jupyter Notebook - Are you sure Y/[N]
 		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_MITO
 		echo ... Installing Mito - may take some time ...
 		.\autobot\venv\Scripts\python -m pip install mitoinstaller
@@ -268,31 +219,59 @@ EXIT /B %ERRORLEVEL%
 
 :: =============================================================
 :: Functions
+:help
+	@echo Install optimus automation suite
+	@echo [HOW TO USE]
+	@echo - Install.bat should be placed in the directory you wish to install OPTIMUS.
+	@echo   - Example: D:\Optimus
+	@echo If installing over existing program, an upgrade will be performed installed
+	@echo   - autobot program files will be updated.  And libraries will be reinstalled if NEW requirements detected
+	@echo   - E.g. install -s -p optimus_package_upgrade.zip
+	@echo   - If optimus_package_upgrade.zip does not exist, it will be downloaded from repo.
+	@echo .
+	@echo [WHAT HAPPENS]
+	@echo - Latest packages will be downloaded, unpacked and updated in the directory:
+	@echo   - Optimus Pacakge.
+	@echo     - Default is optimus_package.zip.
+	@echo     - If another release is required, then e.g. install -s -p optimus_package_20231228_mini.zip
+	@echo       The specific package must be the last argument
+	@echo   - Python. Minimalist package with tkinter and version 3.10.9.
+	@echo   - If optimus package or python package files are present, download will be skipped.
+	@echo - Installs external programs - prefect, jupyter, playwright, robot framework browser
+	@echo - Installs Pip libraries used by Optimus autobot
+	@echo .
+	@echo ------------------------------------------------------------------
+	@echo -h or -H for help
+	@echo -s or -S for silent mode full installation e.g. install -s
+	@echo          Generates install.log for details of installation run
+	@echo ------------------------------------------------------------------
+	pause
+	goto :eof
 
 :installOptimusPackage
 	@echo ================ INSTALL OPTIMUS PACKAGE ==========================
 	@echo ================ INSTALL OPTIMUS PACKAGE ========================== >> install.log	
-	Powershell.exe Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
+	REM Powershell.exe Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
 
 	if not exist %1 (
-		echo %1 not present in %cd%
 		rem tmp\optimus_package.zip
 		@echo Download optimus package
-
-		rem Check latest release
-		set psCommand=powershell -command "Invoke-RestMethod -Uri https://api.github.com/repos/ray-oh/optimus-installation/releases/latest | Select-Object -ExpandProperty tag_name"
-		for /f "usebackq delims=" %%i in (`!psCommand!`) do set latestRelease=%%i
-		@echo Latest Release !latestRelease! of package %1 is available.
 
 		rem set OPTIMUS_URL=https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/optimus_package.zip
 		rem powershell wget "%OPTIMUS_URL%" -o ./tmp/optimus_package.zip
 		rem powershell wget https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/optimus_package.zip -o ./optimus_package.zip
-		rem powershell wget https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/%1 -o ./%1
-		powershell wget https://github.com/ray-oh/Optimus-Installation/releases/download/!latestRelease!/%1 -o ./%1
-		rem ./tmp/optimus_package.zip
-		echo Download optimus package !latestRelease!/%1 >> install.log
+		rem powershell wget https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/%1 -o ./%1 >> install.log
+		powershell wget https://github.com/ray-oh/Optimus-Installation/raw/main/installation/packages/%1 -o ./%1 || echo [DOWNLOAD_FAILED]  >> install.log
+		call:stringExistInFile [DOWNLOAD_FAILED] download_failed install.log
+		if !download_failed! equ True (
+			echo Download %1 failed: !download_failed! Error code %ERRORLEVEL%. >> install.log
+			EXIT /B %ERRORLEVEL%
+		) else (
+			echo Download %1 successful: !download_failed! Error code %ERRORLEVEL% >> install.log
+		)
 	) else (
-		echo %1 present in %cd%
+		@echo %1 already exist.
+		@echo %1 already exist. >> install.log
 	)
 
 	if not exist tmp\autobot (
@@ -302,12 +281,10 @@ EXIT /B %ERRORLEVEL%
 			mkdir tmp
 		)
 
-		@echo Unpack optimus package
+		@echo Unpack optimus package to tmp folder
 		Powershell.exe Expand-Archive %1 -DestinationPath tmp
 		rem tmp\optimus_package.zip
 		echo Upack optimus package >> install.log
-	) else (
-		echo tmp\autobot already exist, hence no unpack performed.  Remove this directory if you wish to unpack the package files for installation.
 	)
 
 	if not exist autobot\src (
@@ -315,7 +292,7 @@ EXIT /B %ERRORLEVEL%
 		rem set destSync=.
 		rem robocopy .\tmp "%destSync%" /XD __pycache__ Lib venv /XF install.bat optimus_package.zip python_installation.zip /e /copy:DAT /mt /z
 		robocopy .\tmp . /XD __pycache__ Lib venv /XF install.bat optimus_package.zip /e /copy:DAT /mt /z >> install.log
-		echo [NEW] INSTALL >> install.log
+		echo [NEW_INSTALL] >> install.log
 	) else (
 		rem @echo UPGRADE - Update optimus codes
 		rem robocopy .\tmp\autobot\src .\autobot\src /XD __pycache__ Lib venv /XF install.bat /e /copy:DAT /mt /z
@@ -323,7 +300,7 @@ EXIT /B %ERRORLEVEL%
 		@echo Check if there is new requirements.txt
 		fc /b %~dp0autobot\requirements.txt %~dp0tmp\autobot\requirements.txt > nul
 		if errorlevel 1 (
-			echo [NEW] requirements file >> install.log
+			echo [NEW_requirements] file >> install.log
 		) else (
 			echo Requirements file unchanged
 		)
@@ -360,40 +337,54 @@ EXIT /B %ERRORLEVEL%
 :installPython_winpython
 	@echo ================ INSTALL PYTHON ==========================
 	@echo ================ INSTALL PYTHON ========================== >> install.log
-	Powershell.exe Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
-	if not exist installation\python-3.10.9.amd64 (
+	REM Powershell.exe Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
 
-		if not exist python_installation.zip (
-			rem tmp\python_installation.zip 
-			@echo Download win python minimalist package
-			rem set PYTHON_URL=https://github.com/ray-oh/Optimus-Installation/raw/main/installation/3rd_party_tools/python-3.10.9.amd64.zip
-			rem powershell wget "%PYTHON_URL%" -o ./installation/tmp/python_installation.zip
-			powershell wget https://github.com/ray-oh/Optimus-Installation/raw/main/installation/3rd_party_tools/python-3.10.9.amd64.zip -o ./python_installation.zip
-			rem ./tmp/python_installation.zip
+	@echo Check if need to install virtual env and its libraries
+	if not exist autobot\venv\Scripts\python.exe goto :INSTALL_PYTHON
+
+	findstr /c:"[NEW_INSTALL]" install.log > nul
+	if %errorlevel% equ 0 (
+		goto :INSTALL_PYTHON
+	) else (
+		echo No NEW installation or changes found. Re-installation of virtual env and libraries not required.
+		goto :SKIP_INSTALL_PYTHON
+	)
+
+	:INSTALL_PYTHON
+		echo NEW installation or changes require installation of python.exe and virtual env and libraries
+		if not exist installation\python-3.10.9.amd64 (
+			if not exist python_installation.zip (
+				goto :DOWNLOAD_PYTHON_PACKAGE
+			) else (
+				goto :UNPACK_PYTHON_PACKAGE				
+			)
+		) else (
+			goto :SETUP_PYTHON_VENV
 		)
 
+	:DOWNLOAD_PYTHON_PACKAGE
+		rem tmp\python_installation.zip 
+		@echo Download win python minimalist package
+		rem set PYTHON_URL=https://github.com/ray-oh/Optimus-Installation/raw/main/installation/3rd_party_tools/python-3.10.9.amd64.zip
+		rem powershell wget "%PYTHON_URL%" -o ./installation/tmp/python_installation.zip
+		powershell wget https://github.com/ray-oh/Optimus-Installation/raw/main/installation/3rd_party_tools/python-3.10.9.amd64.zip -o ./python_installation.zip
+		rem ./tmp/python_installation.zip
+
+	:UNPACK_PYTHON_PACKAGE
 		@echo Unpack win python
 		Powershell.exe Expand-Archive python_installation.zip -DestinationPath installation
 		rem tmp\python_installation.zip
 
-		@echo Check if need to install virtual env and its libraries
-		findstr /c:"NEW" install.log > nul
-		if %errorlevel% equ 0 (
-			echo NEW installation or changes require installation of virtual env and libraries
-
-			@echo Setup virtual env
-			if exist .\autobot\venv_DISABLE (
-				rmdir .\autobot\venv /S /Q
-			)
-			rem if not exist .\autobot\venv (
-			rem overwrites earlier venv if it exist and is not activated
-			.\installation\python-3.10.9.amd64\python.exe -m venv .\autobot\venv
-
-		) else (
-			echo No NEW installation or changes found. Re-installation of virtual env and libraries not required.
+	:SETUP_PYTHON_VENV
+		@echo Setup virtual env
+		if exist .\autobot\venv_DISABLE (
+			rmdir .\autobot\venv /S /Q
 		)
+		rem if not exist .\autobot\venv (
+		rem overwrites earlier venv if it exist and is not activated
+		.\installation\python-3.10.9.amd64\python.exe -m venv .\autobot\venv
 
-	)
+	:SKIP_INSTALL_PYTHON
 
 	rem Powershell.exe rm installation\tmp -r -Force
 	goto :eof
