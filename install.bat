@@ -63,22 +63,26 @@ call:INSTALL_JUPYTER
 call:INSTALL_PLAYWRIGHT
 call:INSTALL_MITO
 
+rem clean up installation files
+call:CLEANUP
+
+@echo ================ INSTALLATION COMPLETED ==========================
+findstr /c:"[NEW_INSTALL]" install.log > nul
+if %errorlevel% equ 0 (
+	@echo Create Optimus Shortcut
+	copy ".\installation\OPTIMUS RPA.lnk" .
+
+	@echo To use Auto RPA - click OPTMUS RPA or runRPA.bat from the command line with parameters
+	call runRPA -i 1
+	call runRPA -h
+) else (
+	@echo To use Auto RPA - click OPTMUS RPA or runRPA.bat from the command line with parameters
+)
+
 :: ... put your business logic here
 :: ... make sure EXIT below is present
 :: ... so you don't run into actual functions without the call
-
 call:header Operation Finished Successfully
-rem clean up installation files
-if exist disable_tmp (
-	rmdir tmp /S /Q
-)
-if exist disable_optimus_package.zip (
-	del optimus_package.zip
-)
-if exist python_installation.zip (
-	del python_installation.zip
-)
-
 EXIT /B %ERRORLEVEL%
 
 ::-------------------------------------------------------------
@@ -91,8 +95,11 @@ EXIT /B %ERRORLEVEL%
 		echo INSTALL AUTOBOT libraries >> install.log
 		.\autobot\venv\Scripts\pip install -r .\autobot\requirements.txt >> install.log
 	) else (
-		SET /P AREYOUSURE=Install Optimus libraries - Are you sure Y/[N]
-		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_OPT_LIB
+		choice /m "Install Optimus libraries - Are you sure?" /c yn /t 5 /d n
+		if errorlevel 2 (
+			@echo You chose No.
+			GOTO END_OPT_LIB
+		)
 		.\autobot\venv\Scripts\pip install -r .\autobot\requirements.txt
 		PAUSE
 	)
@@ -111,8 +118,11 @@ EXIT /B %ERRORLEVEL%
 		.\autobot\venv\Scripts\pip install -U prefect >> install.log
 		.\autobot\venv\Scripts\prefect version >> install.log
 	) else (
-		SET /P AREYOUSURE=Install Prefect - Are you sure Y/[N]
-		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_PREFECT
+		choice /m "Install Prefect - Are you sure?" /c yn /t 5 /d n
+		if errorlevel 2 (
+			@echo You chose No.
+			GOTO END_PREFECT
+		)
 		.\autobot\venv\Scripts\pip install -U prefect
 		.\autobot\venv\Scripts\prefect version
 	)
@@ -131,8 +141,11 @@ EXIT /B %ERRORLEVEL%
 		rem echo %CurrDirName%
 		.\autobot\venv\Scripts\python -m ipykernel install --user --name=%CurrDirName% >> install.log
 	) else (
-		SET /P AREYOUSURE=Install Jupyter Notebook - Are you sure Y/[N]
-		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_JUPYTER
+		choice /m "Install Jupyter Notebook - Are you sure?" /c yn /t 5 /d n
+		if errorlevel 2 (
+			@echo You chose No.
+			GOTO END_JUPYTER
+		)
 		pip install jupyter
 		.\autobot\venv\Scripts\pip install ipykernel
 		for %%I in (.) do set CurrDirName=%%~nxI
@@ -168,9 +181,11 @@ EXIT /B %ERRORLEVEL%
 		@echo Initialize robot framework browser >> install.log		
 		.\autobot\venv\Scripts\rfbrowser init --skip-browsers >> install.log
 	) else (
-		SET /P AREYOUSURE=Install Playwright - Are you sure Y/[N]
-		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_PLAYWRIGHT
-
+		choice /m "Install Playwright - Are you sure?" /c yn /t 5 /d n
+		if errorlevel 2 (
+			@echo You chose No.
+			GOTO END_PLAYWRIGHT
+		)
 		.\autobot\venv\Scripts\playwright install
 		@echo ================ INSTALL ROBOTFRAMEWORK BROWSER =================
 
@@ -200,22 +215,45 @@ EXIT /B %ERRORLEVEL%
 	if "%silentMode%" == "True" (
 		@echo This is skipped for silent install.  Do manual install if required.
 		@echo This is skipped for silent install.  Do manual install if required. >> install.log
+		GOTO END_MITO
 	) else (
-		SET /P AREYOUSURE=Install Mito sheets for use in Jupyter Notebook - Are you sure Y/[N]
-		IF /I "%AREYOUSURE%" NEQ "Y" GOTO END_MITO
-		echo ... Installing Mito - may take some time ...
-		.\autobot\venv\Scripts\python -m pip install mitoinstaller
-		.\autobot\venv\Scripts\python -m mitoinstaller install
-		@echo ================ INSTALLATION COMPLETED ==========================
-		@echo To use Auto RPA - click runRPA.bat or from the command line with parameters
-		call runRPA -i 1
-		call runRPA -h
-		pause
+		choice /m "Install Mito sheets for use in Jupyter Notebook - Are you sure?" /c yn /t 5 /d n
+		if errorlevel 2 (
+			@echo You chose No.
+			GOTO END_MITO
+		)
 	)
+	echo ... Installing Mito - may take some time ...
+	.\autobot\venv\Scripts\python -m pip install mitoinstaller
+	.\autobot\venv\Scripts\python -m mitoinstaller install
+	pause
 
 	:END_MITO
 	goto :eof
 
+:CLEANUP
+	@echo ================ CLEAN UP =================
+	@echo ================ CLEAN UP ================= >> install.log
+	if "%silentMode%" == "True" (
+		@echo Clean up and remove installation files.
+	) else (
+		choice /m "Clean up and remove installation files - Are you sure?" /c yn /t 5 /d n
+		if errorlevel 2 (
+			@echo You chose No.
+			GOTO END_CLEANUP
+		)
+	)
+	if exist tmp (
+		rmdir tmp /S /Q
+	)
+	if exist disable_optimus_package.zip (
+		del optimus_package.zip
+	)
+	if exist python_installation.zip (
+		del python_installation.zip
+	)
+	:END_CLEANUP
+	goto :eof
 
 :: =============================================================
 :: Functions
